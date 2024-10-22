@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Forecast Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .forecast {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        .warning {
+            color: red;
+            font-weight: bold;
+        }
+        .date {
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+        .temperature {
+            margin: 5px 0;
+        }
+        .temperatures {
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+<h1>Weather Forecast Client</h1>
+<input type="number" id="forecastDays" placeholder="Введите количество дней" />
+<button id="getForecast">Получить прогноз</button>
+<div id="response"></div>
+
+<script>
+    document.getElementById('getForecast').addEventListener('click', async () => {
+        const forecastDays = document.getElementById('forecastDays').value;
+        const responseElement = document.getElementById('response');
+        responseElement.innerHTML = '';
+
+        try {
+            const response = await fetch(`http://localhost:3000/api/v1/weather/forecast?forecastDays=${forecastDays}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const data = await response.json();
+            data.forEach(forecast => {
+                const forecastDiv = document.createElement('div');
+                forecastDiv.className = 'forecast';
+
+                const dateFormatted = new Date(forecast.date).toLocaleDateString('ru-RU');
+                const dateElement = document.createElement('div');
+                dateElement.className = 'date';
+                dateElement.textContent = `Дата: ${dateFormatted}`;
+                forecastDiv.appendChild(dateElement);
+
+                const temperaturesDiv = document.createElement('div');
+                temperaturesDiv.className = 'temperatures';
+                temperaturesDiv.style.display = 'none';
+
+                forecast.temperatures.forEach(temp => {
+                    const hourFormatted = temp.hour.slice(0, 5);
+                    const tempElement = document.createElement('div');
+                    tempElement.className = 'temperature';
+                    tempElement.textContent = `Час: ${hourFormatted}, Температура: ${temp.temperature}°C`;
+                    temperaturesDiv.appendChild(tempElement);
+                });
+
+                if (forecast.warning) {
+                    const warningElement = document.createElement('div');
+                    warningElement.className = 'warning';
+                    warningElement.textContent = `Предупреждение: ${forecast.warning}`;
+                    forecastDiv.appendChild(warningElement);
+                }
+
+                forecastDiv.appendChild(temperaturesDiv);
+                responseElement.appendChild(forecastDiv);
+
+                forecastDiv.onclick = () => {
+                    temperaturesDiv.style.display = temperaturesDiv.style.display === 'none' ? 'block' : 'none';
+                };
+            });
+        } catch (error) {
+            responseElement.textContent = `Ошибка: ${error.message}`;
+        }
+    });
+</script>
+</body>
+
+</html>
